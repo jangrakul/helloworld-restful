@@ -1,0 +1,70 @@
+
+package helloworld.schedule.test;
+
+import static org.junit.Assert.assertTrue;
+
+import java.io.File;
+
+import org.jboss.arquillian.container.test.api.Deployment;
+import org.jboss.arquillian.junit.Arquillian;
+import org.jboss.arquillian.spring.integration.test.annotation.SpringAnnotationConfiguration;
+import org.jboss.shrinkwrap.api.ShrinkWrap;
+import org.jboss.shrinkwrap.api.spec.WebArchive;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.sun.jersey.api.client.Client;
+import com.sun.jersey.api.client.WebResource;
+import helloworld.schedule.application.ScheduleConfiguration;
+
+@RunWith(Arquillian.class)
+@SpringAnnotationConfiguration(classes = {ScheduleConfiguration.class})
+@Transactional
+public class ScheduleServiceTest {
+	private static final String WEBAPP_SRC = "src/webapp";
+	
+	/**
+	 * Creates the deployment.
+	 *
+	 * @return the web archive
+	 */
+	@Deployment
+	public static WebArchive createDeployment() {
+               
+		return ShrinkWrap
+				.create(WebArchive.class,"schedule.war")
+				.addAsResource("env.properties","env.properties")
+				.setWebXML(new File(WEBAPP_SRC, "WEB-INF/web.xml"))
+				.addPackage("helloworld.schedule.application")
+				.addPackage("helloworld.schedule.rest")
+				.addPackage("helloworld.schedule.service")
+				.addPackage("helloworld.schedule.helper");
+				//.addAsManifestResource("META-INF/persistence.xml", "persistence.xml");
+	}
+	
+	/**
+	 * Schedule report success.
+	 */
+	@Test
+	public void scheduleReportSuccess() {
+		Client client = Client.create();
+		WebResource webResource = client.resource("http://0.0.0.0:8181/schedule/bip/rd/scheduleReport?P_REPORT_NAME=AWACS_MAR&P_REPORT_FORMAT=txml,pdf");
+		webResource.accept("text/plain");
+		String jobId = webResource.get(String.class);
+		assertTrue(null != jobId);
+	}
+	
+	/**
+	 * Schedule report failure.
+	 */
+	@Test
+	public void scheduleReportFailure() {
+		Client client = Client.create();
+		WebResource webResource = client.resource("http://0.0.0.0:8181/schedule/bip/rd/scheduleReport?P_REPORT_NAME=AWACS_MARS&P_REPORT_FORMAT=txml,pdf&delay=1");
+		webResource.accept("text/plain");
+		String jobId = webResource.get(String.class);
+		assertTrue(jobId.contains("Exception"));
+	}
+	
+}

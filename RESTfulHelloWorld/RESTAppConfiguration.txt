@@ -1,0 +1,35 @@
+
+package helloworld.schedule.rest;
+
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
+
+import javax.inject.Named;
+import javax.ws.rs.core.Application;
+
+/**
+ * The Class RESTAppConfiguration.
+ */
+@Named
+public class RESTAppConfiguration extends Application {
+	
+	/** The classes. */
+	private final Set<Class<?>> classes;
+
+	/**
+	 * Instantiates a new REST app configuration, adding the rest services.
+	 */
+	public RESTAppConfiguration() {
+		HashSet<Class<?>> c = new HashSet<Class<?>>();
+		c.add(RestScheduleService.class);
+		this.classes = Collections.unmodifiableSet(c);
+	}
+
+	/* (non-Javadoc)
+	 * @see javax.ws.rs.core.Application#getClasses()
+	 */
+	public Set<Class<?>> getClasses() {
+		return this.classes;
+	}
+}

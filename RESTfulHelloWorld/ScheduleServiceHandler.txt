@@ -1,0 +1,15 @@
+
+package helloworld.schedule.service;
+
+import javax.ws.rs.core.MultivaluedMap;
+
+/** The Interface ScheduleServiceHandler. */
+public interface ScheduleServiceHandler {
+
+	/** Schedules report on the the reportserver server.
+	 *
+	 * @param  documentId the document id
+	 * @param parameters the parameters received from the report service
+	 * @return the JobId of the scheduled report */
+	String scheduleReport(String documentId, MultivaluedMap<String, String> parameters);
+}

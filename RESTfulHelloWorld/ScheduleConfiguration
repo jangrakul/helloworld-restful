@@ -1,0 +1,57 @@
+
+package helloworld.schedule.application;
+
+import javax.inject.Inject;
+
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.ComponentScan;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Import;
+import org.springframework.context.annotation.PropertySource;
+import org.springframework.context.support.PropertySourcesPlaceholderConfigurer;
+
+import helloworld.common.application.AppConfiguration;
+import helloworld.schedule.service.DefaultScheduleServiceHandler;
+import helloworld.schedule.service.ScheduleServiceHandler;
+
+/** The Class ScheduleConfiguration. */
+@Configuration
+@Import(AppConfiguration.class)
+@PropertySource(value = "classpath:env.properties")
+@ComponentScan({ "helloworld.schedule.helper", "helloworld.schedule.rest", "helloworld.schedule.service" })
+public class ScheduleConfiguration {
+
+	/** The app configuration. */
+	@Inject
+	private AppConfiguration appConfiguration;
+
+	/** The rd notification server. */
+	@Value("${rd.helloworldserver.notification.server}")
+	private String rdNotificationServer;
+
+	/** The rd reportserver user id. */
+	@Value("${rd.reportserver.userId}")
+	private String rdreportserverUserId;
+
+	/** The rd reportserver password. */
+	@Value("${rd.reportserver.password}")
+	private String rdreportserverPassword;
+
+	/** Property sources placeholder configurer.
+	 *
+	 * @return the property sources placeholder configurer */
+	@Bean
+	public static PropertySourcesPlaceholderConfigurer propertySourcesPlaceholderConfigurer() {
+		return new PropertySourcesPlaceholderConfigurer();
+	}
+
+	/** Rd schedule service handler.
+	 *
+	 * @return the schedule service handler
+	 * @throws Exception the exception */
+	@Bean
+	public ScheduleServiceHandler rdScheduleServiceHandler() {
+		return new DefaultScheduleServiceHandler(rdreportserverUserId, rdreportserverPassword, "rd", "rd", appConfiguration.getRdreportserverWsdl(), rdNotificationServer);
+	}
+}

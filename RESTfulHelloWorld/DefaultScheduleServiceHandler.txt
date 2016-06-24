@@ -1,0 +1,102 @@
+
+package helloworld.schedule.service;
+
+import java.net.MalformedURLException;
+
+import javax.annotation.PostConstruct;
+import javax.inject.Inject;
+import javax.ws.rs.core.MultivaluedMap;
+
+import com.sun.xml.ws.client.ClientTransportException;
+import com.vocalink.bacs.frameworks.ems.service.AlertService;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
+import com.oracle.xmlns.oxp.service.v2.AccessDeniedException_Exception;
+import com.oracle.xmlns.oxp.service.v2.InvalidParametersException_Exception;
+import com.oracle.xmlns.oxp.service.v2.OperationFailedException_Exception;
+import com.oracle.xmlns.oxp.service.v2.ScheduleRequest;
+import helloworld.common.factory.ScheduleServiceFactory;
+
+/** The Class DefaultScheduleServiceHandler. Used by all the services and applications to schedule report request on reportserver. The reportserver server to be used is determined by the scheduleServiceUrl property. */
+public class DefaultScheduleServiceHandler implements ScheduleServiceHandler {
+
+	/** The Constant logger. */
+	private static final Log logger = LogFactory.getLog(DefaultScheduleServiceHandler.class);
+
+	/** The schedule service helper. */
+	@Inject
+	private ScheduleServiceHelper scheduleServiceHelper;
+
+	@Inject
+	private AlertService emsLogger;
+
+	/** The user id. */
+	private String userId;
+
+	/** The password. */
+	private String password;
+
+	/** The service name. */
+	private String serviceName;
+
+	/** The application name. */
+	private String applicationName;
+
+	/** The schedule service url. */
+	private String scheduleServiceUrl;
+
+	/** The notification server. */
+	private String notificationServer;
+
+	/** Instantiates a new default schedule service handler.
+	 *
+	 * @param userId the user id
+	 * @param password the password
+	 * @param serviceName the service name
+	 * @param applicationName the application name
+	 * @param scheduleServiceUrl the schedule service url
+	 * @param notificationServer the notification server */
+	public DefaultScheduleServiceHandler(String userId, String password, String serviceName, String applicationName, String scheduleServiceUrl, String notificationServer) {
+		this.userId = userId;
+		this.password = password;
+		this.serviceName = serviceName;
+		this.applicationName = applicationName;
+		this.scheduleServiceUrl = scheduleServiceUrl;
+		this.notificationServer = notificationServer;
+	}
+
+	@PostConstruct
+	public void initialiseWebService() {
+		try {
+			ScheduleServiceFactory.getScheduleService(scheduleServiceUrl);
+		} catch (MalformedURLException | RuntimeException e) {
+			logger.error(applicationName + " : Exception in initialising connection to " + scheduleServiceUrl, e);
+			if (notificationServer.contains("parallel")) {
+				emsLogger.raiseAlert("ALERT001", "Failed to initialise webservice for " + applicationName + " PARALLEL RUN on URL : " + scheduleServiceUrl);
+			}
+		}
+	}
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see helloworld.schedule.service.ScheduleServiceHandler#scheduleReport(javax.ws.rs.core.MultivaluedMap)
+	 */
+	public String scheduleReport(String documentId, MultivaluedMap<String, String> parameters) {
+		try {
+			logger.info(applicationName + " : Preparing schedule request for document id : " + documentId);
+			ScheduleRequest scheduleRequest = scheduleServiceHelper.getScheduleRequest(parameters, serviceName, applicationName, notificationServer);
+			logger.info(applicationName + " : Schedule request prepared for document id : " + documentId);
+
+			logger.info(applicationName + " : Scheduling for document id : " + documentId + " , user : " + userId + " & url : " + scheduleServiceUrl);
+			String jobId = ScheduleServiceFactory.getScheduleService(scheduleServiceUrl).scheduleReport(scheduleRequest, userId, password);
+			logger.info(applicationName + " : Report scheduled successfully for document id : " + documentId + ". Job id is : " + jobId + " and job name is : " + scheduleRequest.getUserJobName());
+
+			return jobId + ":::" + scheduleRequest.getUserJobName() + ":::" + ((null == scheduleRequest.getStartDate()) ? "NA" : scheduleRequest.getStartDate());
+		} catch (Exception e) {
+			logger.error(applicationName + " : Document id : " + documentId + ". Exception in scheduling report", e);
+			return e.getMessage();
+		}
+	}
+
+}

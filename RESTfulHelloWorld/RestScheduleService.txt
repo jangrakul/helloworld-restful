@@ -1,0 +1,56 @@
+
+package helloworld.schedule.rest;
+
+import javax.inject.Named;
+import javax.ws.rs.GET;
+import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
+import javax.ws.rs.Produces;
+import javax.ws.rs.core.*;
+
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
+import helloworld.schedule.helper.ScheduleApplicationContext;
+import helloworld.schedule.service.ScheduleServiceHandler;
+
+/**
+ * The REST webservice, RestScheduleService. Report services will use this webservice to request report scheduling on BIP.
+ */
+@Named
+@Path("bip")
+public class RestScheduleService {
+
+	/** The Constant logger. */
+	private static final Log logger = LogFactory.getLog(RestScheduleService.class);
+
+	/**
+	 * Schedules report and returns the job id.
+	 *
+	 * @param applicationName the application name
+	 * @param uriInfo the uri info
+	 * @return the Job Id
+	 */
+	@GET
+	@Produces(MediaType.TEXT_PLAIN)
+	@Path("/{applicationName}/scheduleReport/{documentId}")
+	public String scheduleReport(@PathParam("applicationName") String applicationName, @PathParam("documentId") String documentId, @Context UriInfo uriInfo) {
+		logger.debug("Inside " + applicationName.toLowerCase() + " : ScheduleServiceHandler for document id : " + documentId);
+		logger.info("Scheduling report for " + applicationName + " and document id : " + documentId);
+		ScheduleServiceHandler scheduleServiceHandler = (ScheduleServiceHandler) ScheduleApplicationContext.getBean(applicationName.toLowerCase() + "ScheduleServiceHandler");
+		MultivaluedMap<String, String> parameters = uriInfo.getQueryParameters();
+		return scheduleServiceHandler.scheduleReport(documentId, parameters);
+	}
+
+	/**
+	 * Method to send ok status. Used for application heath check
+	 *
+	 * @return the Response OK
+	 */
+	@GET
+	@Produces(MediaType.TEXT_PLAIN)
+	@Path("/healthcheck")
+	public Response healthcheck() {
+		return Response.ok("Application is up and running", MediaType.TEXT_PLAIN).build();
+	}
+}
